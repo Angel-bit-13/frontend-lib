@@ -67,42 +67,52 @@ const Home = () => {
       </h2>
 
       {/* BOOK GRID */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10">
-        {books
-          ?.filter((b) =>
-            b.title?.toLowerCase().includes(search.toLowerCase()) ||
-            b.author?.toLowerCase().includes(search.toLowerCase())
-          )
-          .map((book) => {
-            const isRented = book.status === "rented";
-            const rentedByUser = user && book.rentedBy === user._id;
-            return (
-              <Link
-                to={`/book/${book._id}`}
-                key={book._id}
-                className={`bg-[#FAF6F0] border border-[#E3DCCE] rounded-3xl p-6 shadow-md hover:shadow-xl transition-all hover:-translate-y-1 ${
-                  rentedByUser ? "border-blue-500" : ""
-                }`}
-              >
-                <h3 className="text-xl font-bold text-[#6F4E37] mb-2">{book.title}</h3>
-                <p className="text-[#8C6E54]">✍ {book.author}</p>
-                <p className="text-[#A18D7A] text-sm mt-1">{book.genre || "Fiction"}</p>
+      {/* BOOK GRID */}
+<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10">
+  {books
+    ?.filter((b) =>
+      b.title?.toLowerCase().includes(search.toLowerCase()) ||
+      b.author?.toLowerCase().includes(search.toLowerCase())
+    )
+    .map((book) => {
+      const isRented = book.status === "rented";
+      const rentedByUser = user && book.rentedBy === user._id;
+      return (
+        <Link
+          to={`/book/${book._id}`}
+          key={book._id}
+          className={`bg-[#FAF6F0] border border-[#E3DCCE] rounded-3xl p-6 shadow-md hover:shadow-xl transition-all hover:-translate-y-1 ${
+            rentedByUser ? "border-blue-500" : ""
+          } flex flex-col items-center`}
+        >
+          {/* Book Image */}
+          {book.image && (
+            <img
+              src={book.image}
+              alt={book.title}
+              className="w-full h-48 object-cover rounded-2xl mb-4"
+            />
+          )}
 
-                <span
-                  className={`inline-block mt-4 px-3 py-1 text-sm font-semibold rounded-full ${
-                    isRented
-                      ? rentedByUser
-                        ? "bg-blue-300 text-blue-800"
-                        : "bg-red-300 text-red-800"
-                      : "bg-green-300 text-green-800"
-                  }`}
-                >
-                  {isRented ? (rentedByUser ? "Rented by you" : "Rented") : "Available"}
-                </span>
-              </Link>
-            );
-          })}
-      </div>
+          <h3 className="text-xl font-bold text-[#6F4E37] mb-2 text-center">{book.title}</h3>
+          <p className="text-[#8C6E54] text-center">✍ {book.author}</p>
+          <p className="text-[#A18D7A] text-sm mt-1 text-center">{book.genre || "Fiction"}</p>
+
+          <span
+            className={`inline-block mt-4 px-3 py-1 text-sm font-semibold rounded-full ${
+              isRented
+                ? rentedByUser
+                  ? "bg-blue-300 text-blue-800"
+                  : "bg-red-300 text-red-800"
+                : "bg-green-300 text-green-800"
+            }`}
+          >
+            {isRented ? (rentedByUser ? "Rented by you" : "Rented") : "Available"}
+          </span>
+        </Link>
+      );
+    })}
+</div>
     </div>
   );
 };

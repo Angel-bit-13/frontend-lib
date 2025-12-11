@@ -57,6 +57,7 @@ const Home = () => {
           <Link to="/" className="text-[#6F4E37] hover:text-black">Home</Link>
           <Link to="/signup" className="text-[#6F4E37] hover:text-black">Signup</Link>
           <Link to="/login" className="text-[#6F4E37] hover:text-black">Login</Link>
+          <Link to="/login" className="text-[#6F4E37] hover:text-black">Admin</Link>
           <Link to="/profile" className="text-[#6F4E37] hover:text-black">Profile</Link>
         </div>
       </nav>

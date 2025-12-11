@@ -13,6 +13,13 @@ const AdminDashboard = () => {
 
   const [books, setBooks] = useState([]);
 
+  useEffect(() => {
+    const role = localStorage.getItem("role");
+    if (role !== "admin") {
+      navigate("/");
+    }
+  }, []);
+
   const BACKEND_URL = "http://localhost:5000"; // change if needed
 
   // Fetch stats + books

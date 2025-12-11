@@ -1,6 +1,7 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import API from "../api/axios";
 
 function SingleBook() {
   const { id } = useParams();
@@ -36,7 +37,7 @@ function SingleBook() {
   const rentBook = async () => {
     if (!token) return alert("Please login first!");
     try {
-      await axios.post(
+      await API.post(
         `http://localhost:5000/api/books/rent/${id}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
@@ -52,7 +53,7 @@ function SingleBook() {
   const returnBook = async () => {
     if (!token) return alert("Please login first!");
     try {
-      await axios.post(
+      await API.post(
         `http://localhost:5000/api/books/return/${id}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }

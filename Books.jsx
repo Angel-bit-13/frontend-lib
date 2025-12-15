@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import BookCard from "../components/BookCard";
-
+import API from "../api/axios";
 function Books() {
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -9,7 +9,7 @@ function Books() {
 
   const getBooks = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/books");
+      const res = await API.get("http://localhost:5000/api/books");
       setBooks(res.data);
     } catch (err) {
       setError("Failed to fetch books");

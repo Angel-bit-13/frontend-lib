@@ -1,144 +1,157 @@
-const express = require("express");
-const router = express.Router();
-const Book = require("../models/Book");
-const auth = require("../middleware/authMiddleware");
-const admin = require("../middleware/adminMiddleware");
+import React, { useEffect, useState } from "react";
+import { Link , useNavigate} from "react-router-dom";
+import axios from "axios";
+import { User, BookOpen, Users, ClipboardList, LogOut } from "lucide-react";
 
+const AdminDashboard = () => {
+  const navigate = useNavigate();
+  const [stats, setStats] = useState({
+    totalBooks: 0,
+    totalUsers: 0,
+    totalRentals: 0,
+  });
 
+  const [books, setBooks] = useState([]);
 
-// CREATE a book (Admin only)
-router.post("/", auth, admin, async (req, res) => {
-    try {
-        const { title, author, publicationYear, genre, ISBN } = req.body;
-
-        const existingBook = await Book.findOne({ ISBN });
-        if (existingBook) {
-            return res.status(400).json({ message: "Book with this ISBN already exists" });
-        }
-
-        const newBook = new Book({ title, author, publicationYear, genre, ISBN });
-        await newBook.save();
-        res.status(201).json({ message: "Book added successfully", book: newBook });
-
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({ message: "Server error" });
+  useEffect(() => {
+    const role = localStorage.getItem("role");
+    if (role !== "admin") {
+      navigate("/");
     }
-});
+  }, []);
 
-// UPDATE book (Admin only)
-router.put("/:id", auth, admin, async (req, res) => {
+  const BACKEND_URL = "http://localhost:5000"; // change if needed
+
+  // Fetch stats + books
+  const fetchDashboardData = async () => {
     try {
-        const book = await Book.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        if (!book) return res.status(404).json({ message: "Book not found" });
-        res.json({ message: "Book updated", book });
+      const booksRes = await axios.get(`${BACKEND_URL}/api/books`);
+      const usersRes = await axios.get(`${BACKEND_URL}/api/users`);
+      const rentalsRes = await axios.get(`${BACKEND_URL}/api/rentals`);
+
+      setStats({
+        totalBooks: booksRes.data.length,
+        totalUsers: usersRes.data.length,
+        totalRentals: rentalsRes.data.length,
+      });
+
+      setBooks(booksRes.data);
     } catch (error) {
-        console.log(error);
-        res.status(500).json({ message: "Server error" });
+      console.error("Dashboard fetch error:", error);
     }
-});
+  };
 
-// DELETE book (Admin only)
-router.delete("/:id", auth, admin, async (req, res) => {
-    try {
-        const book = await Book.findByIdAndDelete(req.params.id);
-        if (!book) return res.status(404).json({ message: "Book not found" });
-        res.json({ message: "Book deleted" });
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({ message: "Server error" });
-    }
-});
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
 
-// GET all books
-router.get("/", async (req, res) => {
-  try {
-    const books = await Book.find(); // fetch all books from MongoDB
-    res.json(books);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server Error" });
-  }
-});
+  return (
+    <div className="flex min-h-screen bg-gray-100">
 
-// GET single book by id
-router.get("/:id", async (req, res) => {
-    try {
-        const book = await Book.findById(req.params.id);
-        if (!book) return res.status(404).json({ message: "Book not found" });
-        res.json(book);
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({ message: "Server error" });
-    }
-});
+      {/* Sidebar */}
+      <div className="w-64 bg-gray-900 text-white p-5 flex flex-col">
+        <h1 className="text-2xl font-bold flex items-center gap-2 mb-8">
+          <BookOpen size={24} /> Admin Panel
+        </h1>
 
-// Rent a book
-router.post("/rent/:id", auth, async (req, res) => {
-    try {
-        const book = await Book.findById(req.params.id);
-        if (!book) return res.status(404).json({ message: "Book not found" });
-        if (book.status === "rented") return res.status(400).json({ message: "Book already rented" });
+        <nav className="flex flex-col gap-3">
+          <Link className="p-3 bg-blue-600 rounded-lg flex items-center gap-2">
+            <ClipboardList size={20} /> Dashboard
+          </Link>
 
-        book.status = "rented";
-        book.rentedBy = req.user._id;
-        await book.save();
+          <Link to="/admin/books" className="p-3 hover:bg-gray-700 rounded-lg flex items-center gap-2">
+            <BookOpen size={20} /> Manage Books
+          </Link>
 
-        // Update user's rentedBooksCount
-        req.user.rentedBooksCount = (req.user.rentedBooksCount || 0) + 1;
-        await req.user.save();
+          <Link to="/admin/users" className="p-3 hover:bg-gray-700 rounded-lg flex items-center gap-2">
+            <Users size={20} /> Manage Users
+          </Link>
 
-        res.json({ message: "Book rented successfully", book });
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({ message: "Server error" });
-    }
-});
+          <Link to="/admin/rentals" className="p-3 hover:bg-gray-700 rounded-lg flex items-center gap-2">
+            <ClipboardList size={20} /> Rentals
+          </Link>
 
-// Return a book
-router.post("/return/:id", auth, async (req, res) => {
-    try {
-        const book = await Book.findById(req.params.id);
-        if (!book) return res.status(404).json({ message: "Book not found" });
-        if (book.status === "available") return res.status(400).json({ message: "Book is not rented" });
+          <Link to="/login" className="p-3 hover:bg-gray-700 rounded-lg flex items-center gap-2 mt-10">
+            <LogOut size={20} /> Logout
+          </Link>
+        </nav>
+      </div>
 
-        book.status = "available";
-        book.rentedBy = null;
-        await book.save();
+      {/* Main Content */}
+      <div className="flex-1 p-8">
+        {/* Top Bar */}
+        <div className="flex justify-between items-center mb-8">
+          <h2 className="text-3xl font-semibold">Admin Dashboard</h2>
+           
+          <button
+            onClick={() => navigate("/admin/profile")}
+            className="p-2 rounded-full hover:bg-gray-200 transition"
+          >
+          <User size={24} />
+          </button>
+    </div>
+        
 
-        // Update user's rentedBooksCount
-        if (req.user.rentedBooksCount && req.user.rentedBooksCount > 0) {
-            req.user.rentedBooksCount -= 1;
-            await req.user.save();
-        }
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
+          <div className="bg-white p-6 rounded-xl shadow text-center">
+            <h3 className="text-4xl font-bold">{stats.totalBooks}</h3>
+            <p className="mt-2 text-gray-600">Total Books</p>
+          </div>
 
-        res.json({ message: "Book returned successfully", book });
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({ message: "Server error" });
-    }
-});
+          <div className="bg-white p-6 rounded-xl shadow text-center">
+            <h3 className="text-4xl font-bold">{stats.totalUsers}</h3>
+            <p className="mt-2 text-gray-600">Total Users</p>
+          </div>
 
-// Like a book
-router.post("/like/:id", auth, async (req, res) => {
-    try {
-        const book = await Book.findById(req.params.id);
-        if (!book) return res.status(404).json({ message: "Book not found" });
+          <div className="bg-white p-6 rounded-xl shadow text-center">
+            <h3 className="text-4xl font-bold">{stats.totalRentals}</h3>
+            <p className="mt-2 text-gray-600">Total Rentals</p>
+          </div>
+        </div>
 
-        const userId = req.user._id;
+        {/* Books Table */}
+        <h3 className="text-xl font-semibold mb-4">Books List</h3>
+        <div className="bg-white rounded-xl shadow p-4">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b">
+                <th className="p-3">Title</th>
+                <th className="p-3">Author</th>
+                <th className="p-3">Genre</th>
+                <th className="p-3">Status</th>
+              </tr>
+            </thead>
 
-        if (book.likedBy.includes(userId)) {
-            return res.status(400).json({ message: "You already liked this book" });
-        }
+            <tbody>
+              {books.length === 0 ? (
+                <tr>
+                  <td className="p-3 text-gray-500">No books found</td>
+                </tr>
+              ) : (
+                books.map((book) => (
+                  <tr key={book._id} className="border-b">
+                    <td className="p-3">{book.title}</td>
+                    <td className="p-3">{book.author}</td>
+                    <td className="p-3">{book.genre}</td>
+                    <td className="p-3">
+                      <span
+                        className={`px-3 py-1 rounded-lg text-white ${
+                          book.status === "available" ? "bg-green-600" : "bg-red-600"
+                        }`}
+                      >
+                        {book.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
 
-        book.likedBy.push(userId);
-        await book.save();
-
-        res.json({ message: "Book liked successfully", book });
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({ message: "Server error" });
-    }
-});
-
-module.exports = router;
+export default AdminDashboard;

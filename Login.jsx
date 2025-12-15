@@ -11,7 +11,7 @@ const Login = () => {
     e.preventDefault();
     try {
       // Fixed API URL: use API instance baseURL
-      const res = await API.post("/api/auth/login", { email, password });
+      const res = await API.post("/auth/login", { email, password });
       console.log("Login response:", res.data);
 
       // Store token and role in localStorage

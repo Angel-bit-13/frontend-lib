@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
-
+import API from "../api/axios";
 const Home = () => {
   const [search, setSearch] = useState("");
   const [books, setBooks] = useState([]);
@@ -12,7 +12,7 @@ const Home = () => {
   // Fetch all books
   const fetchBooks = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/books");
+      const res = await API.get("http://localhost:5000/api/books");
       setBooks(res.data);
     } catch (err) {
       console.log("Error fetching books:", err);
@@ -23,7 +23,7 @@ const Home = () => {
   const fetchUser = async () => {
     if (!token) return;
     try {
-      const res = await axios.get("http://localhost:5000/api/users/me", {
+      const res = await API.get("http://localhost:5000/api/users/me", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setUser(res.data);
@@ -66,7 +66,7 @@ const Home = () => {
         Explore Our Cozy Book Collection ☕📖
       </h2>
 
-      {/* BOOK GRID */}
+      
       {/* BOOK GRID */}
 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10">
   {books
@@ -88,7 +88,7 @@ const Home = () => {
           {/* Book Image */}
           {book.image && (
             <img
-              src={book.image}
+              src={book.coverImage}
               alt={book.title}
               className="w-full h-48 object-cover rounded-2xl mb-4"
             />
@@ -96,8 +96,8 @@ const Home = () => {
 
           <h3 className="text-xl font-bold text-[#6F4E37] mb-2 text-center">{book.title}</h3>
           <p className="text-[#8C6E54] text-center">✍ {book.author}</p>
-          <p className="text-[#A18D7A] text-sm mt-1 text-center">{book.genre || "Fiction"}</p>
-
+          <p className="text-[#A18D7A] text-sm mt-1 text-center">{book.genre}</p>
+       
           <span
             className={`inline-block mt-4 px-3 py-1 text-sm font-semibold rounded-full ${
               isRented

@@ -1,90 +1,144 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import API from "../api/axios";
+const express = require("express");
+const router = express.Router();
+const Book = require("../models/Book");
+const auth = require("../middleware/authMiddleware");
+const admin = require("../middleware/adminMiddleware");
 
-const Login = () => {
-  const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
+
+// CREATE a book (Admin only)
+router.post("/", auth, admin, async (req, res) => {
     try {
-      // Fixed API URL: use API instance baseURL
-      const res = await API.post("/auth/login", { email, password });
-      console.log("Login response:", res.data);
+        const { title, author, publicationYear, genre, ISBN } = req.body;
 
-      // Store token and role in localStorage
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("role", res.data.role);
+        const existingBook = await Book.findOne({ ISBN });
+        if (existingBook) {
+            return res.status(400).json({ message: "Book with this ISBN already exists" });
+        }
 
-      // Redirect based on role
-      if (res.data.role && res.data.role.toLowerCase() === "admin") {
-        navigate("/admin/dashboard");
-      } else {
-        navigate("/home");
-      }
+        const newBook = new Book({ title, author, publicationYear, genre, ISBN });
+        await newBook.save();
+        res.status(201).json({ message: "Book added successfully", book: newBook });
+
     } catch (error) {
-      console.log(error);
-      alert("Invalid login credentials");
+        console.log(error);
+        res.status(500).json({ message: "Server error" });
     }
-  };
+});
 
-  return (
-    <div
-      className="min-h-screen flex justify-center items-center bg-cover bg-center relative"
-      style={{
-        backgroundImage:
-          "url('https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format&fit=crop&w=1200&q=80')",
-      }}
-    >
-      {/* Glassy Card in center */}
-      <form
-        onSubmit={handleLogin}
-        className="relative z-10 max-w-sm mx-auto bg-amber-50/30 backdrop-blur-lg p-10 rounded-3xl shadow-2xl border border-amber-200/40"
-      >
-        {/* Heading */}
-        <h2 className="text-3xl font-bold text-center text-amber-800 mb-6">
-          Welcome Back!
-        </h2>
+// UPDATE book (Admin only)
+router.put("/:id", auth, admin, async (req, res) => {
+    try {
+        const book = await Book.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (!book) return res.status(404).json({ message: "Book not found" });
+        res.json({ message: "Book updated", book });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
 
-        {/* Email Input */}
-        <div className="mb-4">
-          <input
-            type="email"
-            placeholder="Email"
-            className="w-full p-3 rounded-xl border border-amber-200/50 bg-amber-100/30 backdrop-blur-sm placeholder-amber-700 text-amber-900 focus:ring-2 focus:ring-amber-300 transition-all duration-300"
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
+// DELETE book (Admin only)
+router.delete("/:id", auth, admin, async (req, res) => {
+    try {
+        const book = await Book.findByIdAndDelete(req.params.id);
+        if (!book) return res.status(404).json({ message: "Book not found" });
+        res.json({ message: "Book deleted" });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
 
-        {/* Password Input */}
-        <div className="mb-4">
-          <input
-            type="password"
-            placeholder="Password"
-            className="w-full p-3 rounded-xl border border-amber-200/50 bg-amber-100/30 backdrop-blur-sm placeholder-amber-700 text-amber-900 focus:ring-2 focus:ring-amber-300 transition-all duration-300"
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
+// GET all books
+router.get("/", async (req, res) => {
+  try {
+    const books = await Book.find(); // fetch all books from MongoDB
+    res.json(books);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server Error" });
+  }
+});
 
-        {/* Login Button */}
-        <button className="w-full p-3 rounded-full bg-amber-300 text-amber-900 font-semibold shadow-md hover:bg-amber-400 transition-all duration-300">
-          Login
-        </button>
+// GET single book by id
+router.get("/:id", async (req, res) => {
+    try {
+        const book = await Book.findById(req.params.id);
+        if (!book) return res.status(404).json({ message: "Book not found" });
+        res.json(book);
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
 
-        {/* Signup Link */}
-        <p className="text-center mt-5 text-amber-800 font-medium">
-          No account?{" "}
-          <Link to="/signup" className="underline hover:text-amber-900">
-            Sign up
-          </Link>
-        </p>
-      </form>
-    </div>
-  );
-};
+// Rent a book
+router.post("/rent/:id", auth, async (req, res) => {
+    try {
+        const book = await Book.findById(req.params.id);
+        if (!book) return res.status(404).json({ message: "Book not found" });
+        if (book.status === "rented") return res.status(400).json({ message: "Book already rented" });
 
-export default Login;
+        book.status = "rented";
+        book.rentedBy = req.user._id;
+        await book.save();
+
+        // Update user's rentedBooksCount
+        req.user.rentedBooksCount = (req.user.rentedBooksCount || 0) + 1;
+        await req.user.save();
+
+        res.json({ message: "Book rented successfully", book });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+// Return a book
+router.post("/return/:id", auth, async (req, res) => {
+    try {
+        const book = await Book.findById(req.params.id);
+        if (!book) return res.status(404).json({ message: "Book not found" });
+        if (book.status === "available") return res.status(400).json({ message: "Book is not rented" });
+
+        book.status = "available";
+        book.rentedBy = null;
+        await book.save();
+
+        // Update user's rentedBooksCount
+        if (req.user.rentedBooksCount && req.user.rentedBooksCount > 0) {
+            req.user.rentedBooksCount -= 1;
+            await req.user.save();
+        }
+
+        res.json({ message: "Book returned successfully", book });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+// Like a book
+router.post("/like/:id", auth, async (req, res) => {
+    try {
+        const book = await Book.findById(req.params.id);
+        if (!book) return res.status(404).json({ message: "Book not found" });
+
+        const userId = req.user._id;
+
+        if (book.likedBy.includes(userId)) {
+            return res.status(400).json({ message: "You already liked this book" });
+        }
+
+        book.likedBy.push(userId);
+        await book.save();
+
+        res.json({ message: "Book liked successfully", book });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+module.exports = router;

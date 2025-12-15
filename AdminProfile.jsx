@@ -14,23 +14,37 @@ export default function AdminProfile() {
       .catch((err) => console.log(err));
   }, []);
 
-  if (!admin) return <p className="text-center mt-10">Loading...</p>;
+  if (!admin)
+    return (
+      <p className="text-center mt-10 text-gray-700 text-lg">Loading...</p>
+    );
 
   return (
-    <div className="min-h-screen p-10 bg-[#f8f5f1] flex justify-center">
-      <div className="bg-white w-full max-w-lg rounded-3xl shadow p-8">
-        <h1 className="text-3xl font-bold mb-4 text-[#4a3f35]">Admin Profile</h1>
+    <div className="min-h-screen p-10 bg-[#fdf6e3] flex justify-center items-start">
+      <div className="bg-[#f8f1e7] w-full max-w-lg rounded-3xl shadow-lg p-8">
+        <h1 className="text-3xl font-bold mb-6 text-[#5a4a3f] border-b border-[#e2d7cd] pb-3">
+          Admin Profile
+        </h1>
 
-        <p className="text-lg mb-2">
-          <span className="font-semibold">Name:</span> {admin.name}
-        </p>
-        <p className="text-lg mb-2">
-          <span className="font-semibold">Email:</span> {admin.email}
-        </p>
-        <p className="text-lg mb-2">
-          <span className="font-semibold">Role:</span> {admin.role}
-        </p>
+        <div className="space-y-4">
+          <p className="text-lg">
+            <span className="font-semibold text-[#5a4a3f]">Name:</span>{" "}
+            <span className="text-[#4a3f35]">{admin.name}</span>
+          </p>
+
+          <p className="text-lg">
+            <span className="font-semibold text-[#5a4a3f]">Email:</span>{" "}
+            <span className="text-[#4a3f35]">{admin.email}</span>
+          </p>
+
+          <p className="text-lg">
+            <span className="font-semibold text-[#5a4a3f]">Role:</span>{" "}
+            <span className="text-[#4a3f35] capitalize">{admin.role}</span>
+          </p>
+        </div>
       </div>
     </div>
   );
 }
+
+

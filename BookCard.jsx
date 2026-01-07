@@ -1,67 +1,75 @@
-import { useState } from "react";
+import React from "react";
+import { Link, useParams } from "react-router-dom";
 
-const BookCard = ({ book }) => {
-  const [liked, setLiked] = useState(false);
+const BookDetails = ({ books }) => {
+  const { id } = useParams();
+  const book = books.find((b) => b._id === id);
 
-  const handleLike = (e) => {
-    e.stopPropagation(); // stop Link click
-    e.preventDefault();  // stop navigation
-    setLiked(!liked);
-  };
+  if (!book) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-xl text-gray-600">Book not found.</p>
+      </div>
+    );
+  }
 
   return (
-    <div
-      style={{
-        width: "200px",
-        padding: "16px",
-        border: "1px solid #ccc",
-        borderRadius: "8px",
-        position: "relative",
-        margin: "10px",
-        backgroundColor: "#fff",
-      }}
-    >
-      {/* ❤️ LIKE BUTTON */}
-      <button
-        onClick={handleLike}
-        style={{
-          position: "absolute",
-          top: "8px",
-          right: "8px",
-          fontSize: "28px",
-          background: "#fff",
-          border: "2px solid red",
-          borderRadius: "50%",
-          width: "36px",
-          height: "36px",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          cursor: "pointer",
-          zIndex: 100,
-        }}
-      >
-        {liked ? "❤️" : "🤍"}
-      </button>
+    <div className="min-h-screen bg-[#F5EFE6] flex items-center justify-center p-6">
+      <div className="max-w-3xl w-full bg-white rounded-2xl shadow-lg overflow-hidden">
+        
+        {/* Book Cover */}
+        <div className="flex justify-center bg-[#FAF6F0] p-6">
+          <img
+            src={book.img || "https://via.placeholder.com/200x300"}
+            alt={book.title}
+            className="w-48 h-64 object-cover rounded-lg shadow-md"
+          />
+        </div>
 
-      <img
-        src={book?.img || "https://via.placeholder.com/150x200"}
-        alt={book?.title || "Book"}
-        style={{
-          width: "100%",
-          height: "150px",
-          objectFit: "cover",
-          borderRadius: "4px",
-        }}
-      />
+        {/* Book Details */}
+        <div className="p-8 flex flex-col items-center">
+          <h1 className="text-3xl font-bold mb-6 text-center">{book.title}</h1>
 
-      <h3 style={{ marginTop: "8px" }}>{book?.title || "Book Title"}</h3>
-      <p style={{ color: "#666" }}>{book?.author || "Author Name"}</p>
-      <p style={{ fontWeight: "bold", color: book?.isRented ? "red" : "green" }}>
-        {book?.isRented ? "Rented" : "Available"}
-      </p>
+          <table className="table-auto border-collapse w-full text-center">
+            <tbody>
+              <tr className="border-b">
+                <td className="py-3 font-semibold text-gray-700">Author</td>
+                <td className="py-3 text-gray-600">{book.author}</td>
+              </tr>
+              <tr className="border-b">
+                <td className="py-3 font-semibold text-gray-700">Genre</td>
+                <td className="py-3 text-gray-600">{book.genre || "N/A"}</td>
+              </tr>
+              <tr className="border-b">
+                <td className="py-3 font-semibold text-gray-700">Status</td>
+                <td className={`py-3 font-bold ${book.isRented ? "text-red-600" : "text-green-600"}`}>
+                  {book.isRented ? "Rented" : "Available"}
+                </td>
+              </tr>
+              <tr className="border-b">
+                <td className="py-3 font-semibold text-gray-700">Description</td>
+                <td className="py-3 text-gray-600">{book.description || "No description available."}</td>
+              </tr>
+              <tr>
+                <td className="py-3 font-semibold text-gray-700">Publisher</td>
+                <td className="py-3 text-gray-600">{book.publisher || "N/A"}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* Back Button */}
+          <div className="flex justify-center mt-6">
+            <Link
+              to="/"
+              className="bg-[#6F4E37] hover:bg-[#5a3d2d] text-white px-6 py-2 rounded-full transition"
+            >
+              Back to Books
+            </Link>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
 
-export default BookCard;
+export default BookDetails;

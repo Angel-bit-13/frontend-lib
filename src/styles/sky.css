@@ -1,0 +1,85 @@
+/* ===== DISNEY PASTEL SKY BACKGROUND ===== */
+.sky-background {
+    position: relative;
+    background:
+      radial-gradient(circle at 20% 25%, #ffe4ef 0%, transparent 40%),
+      radial-gradient(circle at 80% 30%, #dbe9ff 0%, transparent 45%),
+      linear-gradient(
+        135deg,
+        #bfe3ef 0%,
+        #f8b4c8 35%,
+        #e7c6ff 60%,
+        #6ec1e4 100%
+      );
+    overflow: hidden;
+  }
+  
+  /* CLOUD LAYERS */
+  .sky-background::before,
+  .sky-background::after {
+    content: "";
+    position: absolute;
+    width: 160%;
+    height: 160%;
+    top: -30%;
+    left: -30%;
+    background-repeat: repeat;
+    background-size: 450px 220px;
+    opacity: 0.35;
+    filter: blur(28px);
+    animation: cloudsMove 160s linear infinite;
+    pointer-events: none;
+  }
+  
+  .sky-background::before {
+    background-image:
+      radial-gradient(circle at 30% 40%, white 18%, transparent 20%),
+      radial-gradient(circle at 60% 50%, white 22%, transparent 24%),
+      radial-gradient(circle at 45% 60%, white 16%, transparent 18%);
+  }
+  
+  .sky-background::after {
+    animation-duration: 220s;
+    opacity: 0.25;
+  }
+  
+  /* CLOUD MOTION */
+  @keyframes cloudsMove {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-35%);
+    }
+  }
+  
+  /* FLOATING BOOKS */
+  @keyframes float {
+    0% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0); }
+  }
+  
+  .float {
+    animation: float 7s ease-in-out infinite;
+  }
+  
+  /* SPARKLE HOVER */
+  .sparkle-hover:hover {
+    box-shadow:
+      0 0 25px rgba(255,182,193,0.9),
+      0 0 45px rgba(173,216,230,0.7);
+  }
+  
+  /* MAGIC TEXT */
+  .magic-text {
+    background: linear-gradient(
+      90deg,
+      #f472b6,
+      #c084fc,
+      #60a5fa
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  

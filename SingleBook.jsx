@@ -1,183 +1,227 @@
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import axios from "axios";
 import API from "../api/axios";
+import {
+  FaUser,
+  FaTag,
+  FaCalendarAlt,
+  FaBook,
+  FaStar,
+  FaThumbsUp,
+  FaThumbsDown,
+} from "react-icons/fa";
+import "../styles/sky.css";
 
 function SingleBook() {
   const { id } = useParams();
   const [book, setBook] = useState(null);
-  const [user, setUser] = useState(null);
+  const [liked, setLiked] = useState(false);
+  const [disliked, setDisliked] = useState(false);
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState("");
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   const token = localStorage.getItem("token");
+  const userId = localStorage.getItem("userId");
 
-  // Fetch book by ID
   const getBook = async () => {
-    try {
-      const res = await axios.get(`http://localhost:5000/api/books/${id}`);
-      setBook(res.data);
-    } catch (err) {
-      console.log("Error loading book:", err);
-    }
-  };
+    const res = await API.get(`/books/${id}`);
+    setBook(res.data);
+    setComments(res.data.comments || []);
+    setRating(res.data.averageRating || 0);
 
-  // Fetch logged-in user
-  const getUser = async () => {
-    if (!token) return;
-    try {
-      const res = await axios.get("http://localhost:5000/api/users/me", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setUser(res.data);
-    } catch (err) {
-      console.log("Error fetching user:", err);
+    if (token) {
+      setLiked(res.data.likes?.includes(userId));
+      setDisliked(res.data.dislikes?.includes(userId));
     }
-  };
-
-  // Fetch comments for this book
-  const getComments = async () => {
-    try {
-      const res = await axios.get(`http://localhost:5000/api/books/${id}/comments`);
-      setComments(res.data);
-    } catch (err) {
-      console.log("Error fetching comments:", err);
-    }
-  };
-
-  // Rent a book
-  const rentBook = async () => {
-    if (!token) return alert("Please login first!");
-    try {
-      await API.post(
-        `/books/rent/${id}`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      alert("Book rented successfully!");
-      getBook();
-    } catch (err) {
-      alert(err.response?.data?.message || "Rent failed");
-    }
-  };
-
-  // Return a book
-  const returnBook = async () => {
-    if (!token) return alert("Please login first!");
-    try {
-      await API.post(
-        `/books/return/${id}`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      alert("Book returned!");
-      getBook();
-    } catch (err) {
-      alert(err.response?.data?.message || "Return failed");
-    }
-  };
-
-  // Add a new comment
-  const submitComment = async () => {
-    if (!token) return alert("Please login first!");
-    if (!newComment.trim()) return;
-    try {
-      await API.post(
-        `/books/${id}/comments`,
-        { text: newComment },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setNewComment("");
-      getComments();
-    } catch (err) {
-      alert(err.response?.data?.message || "Failed to add comment");
-    }
+    setLoading(false);
   };
 
   useEffect(() => {
     getBook();
-    getUser();
-    getComments();
   }, []);
 
-  if (!book) return <p className="text-center mt-10">Loading...</p>;
+  const submitRating = async (value) => {
+    const res = await API.post(`/books/rate/${id}`, { rating: value });
+    setRating(res.data.averageRating);
+  };
 
-  const isRented = book.status === "rented";
-  const canReturn = isRented && user && book.rentedBy === user._id;
+  const handleLike = async () => {
+    await API.post(`/books/like/${id}`);
+    setLiked(true);
+    setDisliked(false);
+    getBook();
+  };
+
+  const handleUnlike = async () => {
+    await API.post(`/books/dislike/${id}`);
+    setDisliked(true);
+    setLiked(false);
+    getBook();
+  };
+
+  const submitComment = async () => {
+    if (!newComment.trim()) return;
+    const res = await API.post(`/books/comment/${id}`, { text: newComment });
+    setComments([...comments, res.data]);
+    setNewComment("");
+  };
+
+  if (loading) return <p className="text-center mt-20">Loading...</p>;
 
   return (
-    <div className="min-h-screen p-10 bg-[#f8f5f1] flex justify-center">
-      <div className="w-full max-w-3xl bg-white rounded-3xl shadow-lg p-8 space-y-8">
-        {/* Book Info Section */}
-        <div className="space-y-4">
-          <h1 className="text-4xl font-bold text-[#6F4E37]">{book.title}</h1>
-          <p className="text-gray-700"><span className="font-semibold">Author:</span> {book.author}</p>
-          <p className="text-gray-700"><span className="font-semibold">Genre:</span> {book.genre}</p>
-          <p className="text-gray-700"><span className="font-semibold">Description:</span> {book.description || "No description available."}</p>
-          <p className={`inline-block px-4 py-2 rounded-full text-sm font-semibold ${
-            isRented ? "bg-red-300 text-red-800" : "bg-green-300 text-green-800"
-          }`}>
-            {isRented ? "Currently Rented" : "Available"}
-          </p>
-        </div>
+    <div className="sky-background min-h-screen px-6 py-6 text-pink-900">
 
-        {/* Action Buttons */}
-        <div className="flex gap-4">
-          <button
-            onClick={rentBook}
-            disabled={isRented}
-            className={`px-6 py-3 rounded-xl text-white font-semibold transition ${
-              isRented ? "bg-gray-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700"
-            }`}
-          >
-            Rent Book
-          </button>
-          {canReturn && (
-            <button
-              onClick={returnBook}
-              className="px-6 py-3 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-700 transition"
-            >
-              Return Book
-            </button>
-          )}
+      {/* NAVBAR */}
+      <nav className="mb-10 flex justify-between items-center bg-white/60 backdrop-blur-md px-6 py-3 rounded-xl shadow-md max-w-5xl mx-auto">
+        <h1 className="text-xl font-bold text-pink-600">BeigeReads</h1>
+        <div className="space-x-5 text-md">
+          <Link to="/home" className="text-pink-600 hover:text-pink-800">
+            Home
+          </Link>
+          <Link to="/profile" className="text-pink-600 hover:text-pink-800">
+            Profile
+          </Link>
         </div>
+      </nav>
 
-        {/* Comments Section */}
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-[#6F4E37]">Comments</h2>
-          {/* Add Comment */}
-          {user && (
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Add a comment..."
-                className="flex-1 border border-gray-300 rounded-lg px-4 py-2"
+      {/* BOOK CONTENT */}
+      <div className="flex justify-center">
+        <div className="bg-white/70 backdrop-blur-lg shadow-xl rounded-2xl p-6 max-w-3xl w-full flex flex-col gap-8 border border-pink-200">
+
+          {/* TITLE */}
+          <h1 className="magic-text text-3xl font-extrabold text-center">
+            {book.title}
+          </h1>
+
+          {/* MAIN SECTION */}
+          <div className="flex flex-col md:flex-row gap-8 items-center">
+
+            {/* COVER - CENTERED */}
+            <div className="flex justify-center items-center w-full md:w-auto">
+              <img
+                src={book.coverImage}
+                alt={book.title}
+                className="w-40 h-60 object-cover rounded-xl sparkle-hover shadow-md"
               />
-              <button
-                onClick={submitComment}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-              >
-                Submit
-              </button>
             </div>
-          )}
-          {!user && <p className="text-gray-500">Login to add a comment.</p>}
 
-          {/* Display Comments */}
-          <div className="space-y-2 max-h-64 overflow-y-auto">
-            {comments.length === 0 ? (
-              <p className="text-gray-500">No comments yet.</p>
-            ) : (
-              comments.map((c) => (
-                <div key={c._id} className="bg-[#f5efe6] p-3 rounded-lg shadow-sm">
-                  <p className="text-gray-700">{c.text}</p>
-                  <p className="text-gray-500 text-sm mt-1">— {c.userName}</p>
+            {/* DETAILS */}
+            <div className="flex-1 bg-white/60 rounded-xl p-4 border border-pink-200 shadow-inner w-full">
+              <table className="w-full text-sm">
+                <tbody className="divide-y divide-pink-200 text-pink-800">
+                  <tr>
+                    <th className="py-2 flex items-center gap-2 font-semibold">
+                      <FaUser /> Author
+                    </th>
+                    <td>{book.author}</td>
+                  </tr>
+                  <tr>
+                    <th className="py-2 flex items-center gap-2 font-semibold">
+                      <FaTag /> Genre
+                    </th>
+                    <td>{book.genre}</td>
+                  </tr>
+                  <tr>
+                    <th className="py-2 flex items-center gap-2 font-semibold">
+                      <FaCalendarAlt /> Year
+                    </th>
+                    <td>{book.publicationYear}</td>
+                  </tr>
+                  <tr>
+                    <th className="py-2 flex items-center gap-2 font-semibold">
+                      <FaBook /> ISBN
+                    </th>
+                    <td>{book.ISBN}</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              {/* RATING */}
+              <div className="mt-4 flex items-center gap-2">
+                {[1,2,3,4,5].map((star) => (
+                  <FaStar
+                    key={star}
+                    size={22}
+                    className={`cursor-pointer ${
+                      (hoverRating || rating) >= star
+                        ? "text-yellow-400"
+                        : "text-gray-300"
+                    }`}
+                    onMouseEnter={() => setHoverRating(star)}
+                    onMouseLeave={() => setHoverRating(0)}
+                    onClick={() => submitRating(star)}
+                  />
+                ))}
+                <span className="ml-2 font-semibold text-sm">
+                  {rating.toFixed(1)} / 5
+                </span>
+              </div>
+
+              {/* LIKE / DISLIKE */}
+              {token && (
+                <div className="mt-4 flex gap-3">
+                  <button
+                    onClick={handleLike}
+                    className={`p-2 rounded-full text-white ${
+                      liked ? "bg-pink-600" : "bg-pink-400 hover:bg-pink-500"
+                    }`}
+                  >
+                    <FaThumbsUp />
+                  </button>
+                  <button
+                    onClick={handleUnlike}
+                    className={`p-2 rounded-full text-white ${
+                      disliked ? "bg-pink-600" : "bg-pink-400 hover:bg-pink-500"
+                    }`}
+                  >
+                    <FaThumbsDown />
+                  </button>
                 </div>
-              ))
+              )}
+            </div>
+          </div>
+
+          {/* COMMENTS */}
+          <div className="bg-white/60 rounded-xl p-4 border border-pink-200 shadow-inner">
+            <h2 className="text-xl font-bold text-pink-700 mb-3">
+              Comments
+            </h2>
+
+            <div className="flex flex-col gap-3 max-h-48 overflow-y-auto text-sm">
+              {comments.map((c, i) => (
+                <div
+                  key={i}
+                  className="bg-pink-100 p-2 rounded-lg border border-pink-200"
+                >
+                  <p>{c.text}</p>
+                  <span className="text-xs text-pink-600">
+                    — {c.userName || "Anonymous"}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {token && (
+              <div className="mt-3 flex gap-2">
+                <input
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder="Add a comment..."
+                  className="flex-1 p-2 rounded-lg border border-pink-200 outline-none text-sm"
+                />
+                <button
+                  onClick={submitComment}
+                  className="px-3 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 text-sm"
+                >
+                  Send
+                </button>
+              </div>
             )}
           </div>
+
         </div>
       </div>
     </div>
@@ -185,4 +229,3 @@ function SingleBook() {
 }
 
 export default SingleBook;
-
